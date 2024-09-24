@@ -1,0 +1,47 @@
+name: Unittest
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v4
+    
+    - name: Build docker image
+      run: >
+        docker build .
+        --file ./python-preprocessor/Containerfile
+        --tag python-preprocessor-image
+    
+    - name: Container start
+      run: >
+        docker run
+        --volume "./python-preprocessor/workspace/:/workspace/"
+        --tty
+        --detach
+        --interactive
+        --name "python-preprocessor-container" 
+        python-preprocessor-image
+
+    - name: Container install package
+      run: >
+        docker exec python-preprocessor-container 
+        pip install -e /workspace/ 
+      
+    - name: Container run unittest
+      run: >
+        docker exec python-preprocessor-container 
+        python3 -m unittest discover -s /workspace/test
+
+        
